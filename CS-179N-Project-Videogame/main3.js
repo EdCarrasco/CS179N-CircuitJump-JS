@@ -7,20 +7,19 @@ let line4
 let lines = []
 
 let railManager = null
+FRAMERATE = 60
 
 function setup() {
-	//frameRate(1)
 	createCanvas(640,480)
 	railManager = new RailManager()
 
-	let pos = createVector(width/2,height/2)
-	player = new Player(pos)
+	player = new Player(createVector(250,410))
 
 	//line0 = new Rail(createVector(50,300), createVector(600,300))
 
-	line1 = new Rail(createVector(100,400), createVector(200,400), 'red')
-	line2 = new Rail(createVector(300,400), createVector(500,100), 'blue')
-	line3 = new Rail(createVector(200,400), createVector(300,400), 'green')
+	line1 = new Rail(createVector(100,300), createVector(200,400), 'red')
+	line2 = new Rail(createVector(400,400), createVector(400,100), 'blue')
+	line3 = new Rail(createVector(200,400), createVector(400,400), 'green')
 
 	//line4 = new Rail(createVector(300,350), createVector(50,301))
 	//line5 = new Rail(createVector(150,150), createVector(500,300))
@@ -39,34 +38,35 @@ function setup() {
 
 function draw() {
 	background(51)
-	frameRate(60)
+	frameRate(FRAMERATE)
 
 	player.preUpdate()
 	railManager.update()
 	player.update()
 
-	railManager.draw()
 	player.draw()
+	railManager.draw()
+	
 
 	let speed = .2
-	let jump = 2
+	let jump = 3
 
 	if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) {
 		//console.log("right")
-		player.addForce(railManager.closestRail.getDirection().normalize().mult(speed))
+		player.addForce(railManager.closestRail.direction.copy().mult(speed))
 	}
 	if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) {
 		//console.log("left")
-		player.addForce(railManager.closestRail.getDirection().normalize().mult(-speed))
+		player.addForce(railManager.closestRail.direction.copy().mult(-speed))
 	}
 	if (player.onRail) {
 		if (keyIsDown(UP_ARROW) || keyIsDown(87)) {
 			//console.log("up")
-			player.addForce(railManager.closestRail.getNormal().mult(jump))
+			player.addForce(railManager.closestRail.normal.copy().mult(jump))
 		}
 		if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) {
 			//console.log("up")
-			player.addForce(railManager.closestRail.getNormal().mult(-jump))
+			player.addForce(railManager.closestRail.normal.copy().mult(-jump))
 		}
 	}
 }
@@ -113,7 +113,7 @@ class Player {
 		//if (this.onRail) fill('gold')
 		//else fill('white')
 		fill(this.color)
-		ellipse(this.pos.x,this.pos.y,25)
+		ellipse(this.pos.x,this.pos.y,15)
 		pop()
 
 		push()
@@ -218,74 +218,123 @@ class Rail {
 		this.startPos = startPos // vector3
 		this.endPos = endPos // vector3
 
+		this.vector = null // vector3
+		this.direction = null // vector3
+		this.normal = null // vector3
+		this.centerPos = null // vector3
+		this.playerVector = null // vector3
+
+		this.velocityProjection = null // vector3
+		this.velocityRejection = null // vector3
+		this.prevDotProduct = 0 // float
+		this.dotProduct = 0 // float
+
+		this.verticalDistance = Infinity // float
+		this.horizontalDistance = Infinity // float
+
 		this.isClosest = false // bool
-		this.dot = 0 // float
-		this.color = color
+		this.color = color // p5.Color
 	}
 
-	getDirection() { // vector3
-		return p5.Vector.sub(this.endPos, this.startPos)
-	}
+	update() {
+		// Update all the variables for this object
+		this.vector = p5.Vector.sub(this.endPos, this.startPos)
+		this.direction = this.vector.copy().normalize()
+		this.normal = createVector(this.direction.y, -1*this.direction.x)
+		this.centerPos = p5.Vector.add(this.startPos, p5.Vector.mult(this.vector, 0.5))
+		this.playerVector = p5.Vector.sub(player.pos, this.centerPos)
+		this.prevDotProduct = this.dotProduct
+		this.dotProduct = this.playerVector.dot(this.normal)
 
-	getNormal() { // vector3
-		let dir = this.getDirection().copy().normalize()
-		return createVector(dir.y,-dir.x)
-	}
+		if (this.isClosest)
+		text(this.dotProduct, 50, 150)
 
-	getProjection(vector) { //
-		let a = (vector) ? vector : p5.Vector.sub(this.startPos, player.pos)
-		let b = this.getDirection()
-		let factor = a.dot(b)/b.dot(b)
-		let projection = p5.Vector.mult(b,factor)
-		return projection
+		this.velocityProjection = this.getVelocityProjection()
+		this.velocityRejection = this.getVelocityRejection()
+		this.verticalDistance = this.getVerticalDistance()
+		this.horizontalDistance = this.getHorizontalDistance()
+
+		// If this is the closest rail to the player
+		// Apply a force to the player
+		if (this.isClosest) {
+			let sign = Math.sign(this.dotProduct) * -1.0 // float
+			let forceFactor = 0.5 // float
+			let force = p5.Vector.mult(this.normal, sign*forceFactor) // vector3
+			player.color = this.color
+			player.addForce(force)
+
+			// If the player has crossed the rail
+			// Set its vertical velocity (Rejection) to zero and add a slight force in the opposite direction
+			// Keep its horizontal velocity (Projection)
+			if (this.dotProduct * this.prevDotProduct < 0) {
+				player.vel.mult(0)
+				player.vel.add(this.velocityRejection.copy().mult(-0.1))
+				player.vel.add(this.velocityProjection)
+				player.onRail = true
+			} else if (this.verticalDistance > 20 ) {
+				player.onRail = false
+			}
+		}
 	}
 
 	getVelocityProjection() {
 		let a = player.vel
-		let b = this.getDirection()
-		return p5.Vector.mult(b,a.dot(b)/b.dot(b))
+		let b = this.direction
+		let factor = a.dot(b)/b.dot(b)
+		return p5.Vector.mult(b, factor) // vector3
 	}
 
 	getVelocityRejection() {
 		let a = player.vel
 		let b = this.direction
-		let proj = this.getVelocityProjection()
-		return p5.Vector.sub(a,proj)
+		let projection = this.getVelocityProjection()
+		return p5.Vector.sub(a, projection)
+	}
+
+	getProjection(vector) {
+		// 
+		let a = (vector) ? vector : this.playerVector//p5.Vector.sub(this.startPos, player.pos)
+		let b = this.direction
+		let factor = a.dot(b)/b.dot(b)
+		return p5.Vector.mult(b,factor) // vector3
+	}
+
+	getProjection_StartPos() {
+		return this.getProjection(p5.Vector.sub(player.pos,this.startPos))
+		//return this.getProjection(p5.Vector.sub(this.startPos, player.pos))
+	}
+
+	getProjection_EndPos() {
+		return this.getProjection(p5.Vector.sub(player.pos,this.endPos))
+		//return this.getProjection(p5.Vector.sub(this.endPos, player.pos))
 	}
 
 	getClosestProjection() {
 		let a1 = p5.Vector.sub(this.startPos, player.pos)
 		let a2 = p5.Vector.sub(this.endPos, player.pos)
-		let proj1 = this.getProjection(a1)
-		let proj2 = this.getProjection(a2)
+		let proj1 = this.getProjection(a1, this.direction)
+		let proj2 = this.getProjection(a2, this.direction)
 		return proj1.mag() <= proj2.mag() ? proj1 : proj2;
-	}
-
-	getProjection_StartPos() {
-		return this.getProjection(p5.Vector.sub(this.startPos, player.pos))
-	}
-
-	getProjection_EndPos() {
-		return this.getProjection(p5.Vector.sub(this.endPos, player.pos))
 	}
 
 	getRejection() {
 		let a = p5.Vector.sub(this.endPos, player.pos)
-		let b = this.getDirection()
-		let factor = a.dot(b)/b.dot(b)
-		let rejection = p5.Vector.sub(a, p5.Vector.mult(b,factor))
-		return rejection
-
-		/*let a = p5.Vector.sub(this.endPos, player.pos)
 		let b = this.vector
 		let factor = a.dot(b)/b.dot(b)
-		this.rejection = p5.Vector.sub(a, p5.Vector.mult(b,factor))*/
+		let projection = p5.Vector.mult(b,factor)
+		return p5.Vector.sub(a, projection)
 	}
+
+	
+
+	
+
+	
 
 	getHorizontalDistance() {
 		// return the distance between the player and the closest endpoint of the rail
 		// if the player is within the two endpoints, return 0 instead
-		let length =  this.getDirection().mag()
+		let length =  this.vector.mag()
 		let startDistance = this.getProjection_StartPos().mag()
 		let endDistance = this.getProjection_EndPos().mag()
 		if (startDistance+endDistance > length*1.01)
@@ -306,81 +355,23 @@ class Rail {
 		return Math.sqrt(this.getSquaredDistance())
 	}
 
-	calcDotProduct() {
-		let a = p5.Vector.sub(player.pos, this.endPos)
-		let b = this.getNormal()
-		this.dot = a.dot(b)
+	getDotProduct() {
+		let a = this.playerVector//p5.Vector.sub(player.pos, this.centerPos)
+		let b = this.normal
+		return a.dot(b)
 	}
 
-	update() {
-		//this.endPos = createVector(mouseX,mouseY)
-		let factor = Math.sign(this.dot) * -1.0 // float
-		let force = this.getNormal().mult(factor) // vector3
-		if (this.isClosest) {
-			player.color = this.color
-			player.addForce(force)
-			let prevDot = this.dot // float
-			this.calcDotProduct()
-
-			push()
-			//translate(createVector(width/2,height/2))
-			translate(player.pos)
-			let _proj = this.getVelocityProjection()
-			let _rej = this.getVelocityRejection()
-			/*rect(100,100, 200,150)
-			text("proj.x " + _proj.x, 100,100+15)
-			text("proj.y " + _proj.y, 100,100+30)
-			text("rej.x " + _rej.x, 100,100+45)
-			text("rej.y " + _rej.y, 100,100+60)
-			text("vel.x " + player.vel.x, 100,100+75)
-			text("vel.y " + player.vel.y, 100,100+90)
-			let test = p5.Vector.add(_proj,_rej).sub(player.vel)
-			
-			text("test x " + test.x, 100, 100+105)
-			text("test y " + test.y, 100, 100+120)*/
-			/*_proj.mult(20)
-			_rej.mult(20)
-			ellipse(0,0,5)
-			stroke('blue')
-			line(0,0, _rej.x, _rej.y)
-			stroke('green')
-			line(0,0, _proj.x, _proj.y)
-			stroke('white')
-			let vel = player.vel.copy().mult(20)
-			line(0,0,vel.x,vel.y)
-			*/
-			pop()
-
-
-			if (this.dot * prevDot < 0) {
-				let rej = this.getVelocityRejection()
-				let proj = this.getVelocityProjection()
-				//let direction = this.getDirection().normalize().mult(0.01)
-				//player.vel.mult(0)
-				player.vel.set(rej.mult(-0.1))
-				player.vel.add(proj)
-				player.onRail = true
-			} else if (this.getVerticalDistance() > 20 ) {
-				player.onRail = false
-			}
-			
-		}
-
-		//this.endPos = createVector(mouseX,mouseY)
-
-		
-	}
+	
 
 	draw() {
 		// Line from player to center of rail
 		push()
-		let centerPos = p5.Vector.add(this.startPos, this.getDirection().mult(1/2))
-		line(player.pos.x, player.pos.y, centerPos.x, centerPos.y)
+		//line(player.pos.x, player.pos.y, this.centerPos.x, this.centerPos.y)
 		pop()
 
 		// Draw the rail itself
 		push()
-		let dir = this.getDirection()
+		//let dir = this.vector
 		strokeWeight(5)
 		if (this.isClosest) {
 			strokeWeight(5)
@@ -390,27 +381,43 @@ class Rail {
 		line(this.startPos.x,this.startPos.y,this.endPos.x,this.endPos.y)
 		pop()
 
-		if (!this.isClosest)
-			return
-
 		/*push()
-		translate(this.startPos)
-		let normal = this.getNormal().mult(20)
-		stroke('green')
-		line(0,0,normal.x,normal.y)
-		pop()
+		translate(this.centerPos)
+		stroke('black')
+		strokeWeight(3)
+		line(0,0, this.playerVector.x, this.playerVector.y)
+		pop()*/
 
 		push()
-		translate(player.pos)
-		stroke('red')
-		let projection = this.getClosestProjection()
+		translate(this.centerPos)
+		stroke('black')
+		strokeWeight(3)
+		let projection = this.getProjection().copy().mult(1)
 		line(0,0,projection.x,projection.y)
 		pop()
 
-		push()
+		if (!this.isClosest)
+			return
+
+		//console.log()
+		text("vertical distance: " + this.verticalDistance, 50,100)
+
+		/*push()
+		translate(this.startPos)
+		let normal = this.normal.copy().mult(20)
+		stroke('green')
+		line(0,0,normal.x,normal.y)
+		pop()
+		*/
+		
+		
+		
+		
+		/*push()
 		translate(player.pos)
-		stroke('blue')
-		let rejection = this.getRejection().mult(20)
+		stroke('red')
+		strokeWeight(3)
+		let rejection = this.velocityRejection.copy().mult(20)
 		line(0,0,rejection.x,rejection.y)
 		pop()*/
 
@@ -421,5 +428,15 @@ class Rail {
 		text("ver "+floor(this.getVerticalDistance()), 5, 35)
 		text("dist "+floor(this.getDistance()),5,55)
 		pop()*/
+
+		
 	}
+
+	/*getVector() { // vector3
+		return p5.Vector.sub(this.endPos, this.startPos)
+	}*/
+
+	/*getNormal() { // vector3
+		return createVector(this.direction.y, -this.direction.x)
+	}*/
 }
