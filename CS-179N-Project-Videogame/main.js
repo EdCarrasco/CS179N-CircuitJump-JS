@@ -7,14 +7,15 @@ let line4
 let gate1
 
 let lines = []
-
+//let gates = []
+let gateManager = null
 let railManager = null
 FRAMERATE = 60
 
 function setup() {
 	createCanvas(640,480)
 	railManager = new RailManager()
-
+	gateManager = new GateManager()
 	//player = new Player(createVector(150+0,200-0))
 	player = new Player(createVector(250+40,400-50))
 
@@ -47,7 +48,8 @@ function setup() {
 
 	//railManager.add(line8)
 
-	gate1 = new Gate(createVector(0,0), 'AND')
+	gate1 = new Gate(createVector(100,0), 'AND')
+	gateManager.add(gate1)
 }
 
 function draw() {
@@ -106,6 +108,7 @@ function drawVector(origin, vector, color='black', factor=1, weight=1) {
 
 class Player {
 	constructor(pos) {
+		this.collision = false
 		this.pos = pos
 		this.vel = createVector(0,0)
 		this.acc = createVector(0,0)
@@ -130,18 +133,21 @@ class Player {
 
 	update() {
 		this.rail = railManager.closestRail
+		if (!this.collision){
+			this.vel.add(this.acc)
+			this.pos.add(this.vel)
+			this.acc.mult(0) // reset
+		
 
-		this.vel.add(this.acc)
-		this.pos.add(this.vel)
-		this.acc.mult(0) // reset
+			this.velProjection = projection(this.vel, this.rail.direction)
+			this.velRejection = rejection(this.vel, this.rail.direction)
 
-		this.velProjection = projection(this.vel, this.rail.direction)
-		this.velRejection = rejection(this.vel, this.rail.direction)
+			this.tetherToRail()
+			this.adjustCoords()
+			this.pos = createVector(mouseX,mouseY)
 
-		this.tetherToRail()
-		this.adjustCoords()
-
-		//this.pos = createVector(mouseX,mouseY)
+		}
+		gateManager.checkcollision(this)
 	}
 
 	controls() {
@@ -447,9 +453,32 @@ class Rail {
 	}
 }
 
+class GateManager {
+	constructor(){
+		this.gates = []
+	}
+	add(gate) {
+		this.gates.push(gate)
+	}
+	checkcollision(player){
+		for (let i = 0 ; i < this.gates.length; i++){
+			if ((player.pos.x >=this.gates[i].pos.x )&&(player.pos.x <= this.gates[i].maxX)){
+				if((player.pos.y >=this.gates[i].pos.y )&&(player.pos.y <= this.gates[i].maxY)){
+					player.collision = true
+				}
+			}
+		}
+	}
+
+}
+
 class Gate {
 	constructor(pos, type) {
 		this.pos = pos
+		this.width = 50
+		this.height = 50
+		this.maxX = this.pos.x + this.width
+		this.maxY = this.pos.y + this.height
 		this.type = type
 		this.inputRails = []
 		this.outputRails = null
@@ -463,6 +492,9 @@ class Gate {
 		push()
 		fill('red')
 		rect(this.pos.x, this.pos.y, 50, 50)
+		fill('black')
+		textAlign(CENTER,CENTER)
+		text(this.type,this.pos.x + this.width/2,this.pos.y + this.height/2)
 		pop()
 	}
 }
