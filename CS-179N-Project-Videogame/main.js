@@ -112,7 +112,7 @@ class Player {
 		this.pos = pos
 		this.vel = createVector(0,0)
 		this.acc = createVector(0,0)
-
+		this.radius = 12.5
 		this.moveSpeed = 0.1
 		this.jumpSpeed = 4
 
@@ -239,7 +239,7 @@ class Player {
 		push()
 		noStroke()
 		fill(this.color)
-		ellipse(this.pos.x,this.pos.y,25) // size
+		ellipse(this.pos.x,this.pos.y,this.radius*2) // size
 		pop()
 
 		drawVector(createVector(width/2,height/2),this.vel)
@@ -462,8 +462,8 @@ class GateManager {
 	}
 	checkcollision(player){
 		for (let i = 0 ; i < this.gates.length; i++){
-			if ((player.pos.x >=this.gates[i].pos.x )&&(player.pos.x <= this.gates[i].maxX)){
-				if((player.pos.y >=this.gates[i].pos.y )&&(player.pos.y <= this.gates[i].maxY)){
+			if ((player.pos.x + 12.5 >=this.gates[i].pos.x )&&(player.pos.x - 12.5 <= this.gates[i].maxX)){
+				if((player.pos.y + 12.5 >=this.gates[i].pos.y )&&(player.pos.y - 12.5 <= this.gates[i].maxY)){
 					player.collision = true
 				}
 			}
@@ -475,6 +475,7 @@ class GateManager {
 class Gate {
 	constructor(pos, type) {
 		this.pos = pos
+		this.active = null
 		this.width = 50
 		this.height = 50
 		this.maxX = this.pos.x + this.width
