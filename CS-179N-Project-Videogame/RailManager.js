@@ -6,11 +6,13 @@ class RailManager {
 
 	calcClosestRail() {
 		for (let rail of this.rails) {
-			rail.updateValues()
+			rail.updateValues() // only updates values
 		}
 		this.rails.sort((a,b) => (a.distance > b.distance) ? 1 : -1)
 		this.closestRail = this.rails[0]
 		this.closestPoint = this.closestRail.closestPoint
+
+		this.closestRail.isPowered = true
 	}
 
 	update() {
@@ -20,7 +22,6 @@ class RailManager {
 		this.rails.sort((a,b) => (a.distance > b.distance) ? 1 : -1)
 		this.closestRail = this.rails[0]
 		this.closestPoint = this.closestRail.closestPoint
-		drawVector(player.pos, this.closestRail.playerToClosest, "red")
 	}
 
 	add(rail) {

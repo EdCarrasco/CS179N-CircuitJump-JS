@@ -29,10 +29,10 @@ class Rail {
 		this.angle = 0 // float
 
 		this.playerMovedThrough = false // bool
+		this.isPowered = false // bool
 	}
 
 	updateValues() {
-		// Update all the variables for this object
 		this.vector = p5.Vector.sub(this.endPos, this.startPos)
 		this.direction = this.vector.copy().normalize()
 		this.normal2D = createVector(this.direction.y, -1*this.direction.x) // points 90deg counterclockwise from this.direction
@@ -58,6 +58,8 @@ class Rail {
 		this.closestPoint = this.getClosestPoint()
 		this.playerToClosest = p5.Vector.sub(this.closestPoint, player.pos)
 		this.closestDistance = this.playerToClosest.mag()
+
+		this.isPowered = false
 	}
 
 	update() {
@@ -65,30 +67,23 @@ class Rail {
 
 		// If this is the closest rail to the player
 		// Apply a force to the player
-		if (this.isClosest) {
+		/*if (this.isClosest) {
 			let sign = Math.sign(this.dotProduct) // float
-			let forceFactor = 1/(this.horizontalDistance+1)// float
+			let forceFactor = 1/(1+this.horizontalDistance)// float
 			let force = p5.Vector.mult(this.normal2D, sign*forceFactor) // vector3
-			//drawVector(player.pos, force, 'red', 50, 3)
 			player.color = this.color
 			player.addForce(force)
-			//console.log(force.mag())
 
 			// If the current and previous dot products are different
 			// that means that the player has just moved through the Rail
-			if (this.playerHasCrossed/*this.dotProduct * this.prevDotProduct <= 0*/) {
+			if (this.playerHasCrossed){ //this.dotProduct * this.prevDotProduct <= 0) {
 				// Set its vertical velocity (Rejection) to zero and add a slight force in the opposite direction
 				// Keep its horizontal velocity (Projection)
 				player.vel.mult(0)
-				player.vel.add(this.velocityRejection.copy().mult(-0))
-				//player.vel.add(this.velocityProjection)
+				player.vel.add(this.velocityRejection.copy().mult(-0.1))
 				player.addForce(this.velocityProjection)
-				
-				//player.onRail = true
-			} /*else if (this.verticalDistance > 20 ) {
-				player.onRail = false
-			}*/
-		}
+			}
+		}*/
 	}
 
 	getClosestPoint() {
@@ -128,7 +123,38 @@ class Rail {
 	}
 
 	draw() {
-		// Draw the magnetic area
+		//this.drawHorizontalArea()
+		this.drawRail()
+		this.drawClosestPoint()
+
+		push()
+		translate(this.centerPos)
+		let str = (this.isPowered) ? "POWER" : "no_power"
+		textAlign(CENTER,CENTER)
+		text(str, 25,15)
+		pop()
+	}
+
+	drawRail() {
+		push()
+		translate(this.startPos)
+		if (this == railManager.closestRail) strokeWeight(3)
+		else strokeWeight(.5)
+		stroke(this.color)
+		line(0,0,this.vector.x,this.vector.y)
+		pop()
+	}
+
+	drawClosestPoint() {
+		push()
+		translate(this.closestPoint)
+		noStroke()
+		fill(this.color)
+		ellipse(0, 0, 8)
+		pop()
+	}
+
+	drawHorizontalArea() {
 		push()
 		translate(this.centerPos)
 		rotate(this.angle)
@@ -138,29 +164,6 @@ class Rail {
 		fill(0,0,0,20)
 		noStroke()
 		rect(0,0, w, max(width,height)*2)
-
 		pop()
-
-		// Draw the rail itself
-		push()
-		translate(this.startPos)
-		if (this.isClosest) strokeWeight(5)
-		else strokeWeight(2)
-		stroke(this.color)
-		line(0,0,this.vector.x,this.vector.y)
-		pop()
-
-
-		push()
-		fill(this.color)
-		ellipse(this.closestPoint.x, this.closestPoint.y, 15)
-
-		pop()
-
-		if (!this.isClosest)
-			return
-
-		//text("vertical distance: " + this.verticalDistance, 50,100)
-		//text("horizont distance: " + this.horizontalDistance, 50, 120)
 	}
 }

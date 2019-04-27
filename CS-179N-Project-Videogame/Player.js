@@ -36,7 +36,7 @@ class Player {
 
 			this.tetherToRail()
 			this.adjustCoords()
-			this.pos = createVector(mouseX,mouseY)
+			//this.pos = createVector(mouseX,mouseY)
 
 		}
 		gateManager.checkcollision(this)
@@ -63,14 +63,14 @@ class Player {
 	tetherToRail() {
 		// This should be called after the player has updated its position
 		// Ensures that the player position is always exactly on a rail
-		for (let rail of railManager.rails) {
+		/*for (let rail of railManager.rails) {
 			rail.updateValues()
 		}
 		railManager.rails.sort((a,b) => (a.closestDistance > b.closestDistance ? 1 : -1))
-		let point = railManager.rails[0].closestPoint.copy()
-		ellipse(point.x, point.y, 50)
+		let point = railManager.rails[0].closestPoint*/
+		railManager.calcClosestRail()
+		let point = railManager.closestRail.closestPoint
 		let diff = p5.Vector.sub(point, player.pos)
-		drawVector(player.pos, diff)
 		this.pos.add(diff)
 	}
 
@@ -121,7 +121,7 @@ class Player {
 			let b = v.normalize()
 			let dot = a.dot(b)
 			if (dot == 1) {
-				text("dot: "+dot, rail.closestPoint.x+20, rail.closestPoint.y-20)
+				//text("dot: "+dot, rail.closestPoint.x+20, rail.closestPoint.y-20)
 				return rail.closestPoint
 			}
 		}
@@ -129,11 +129,11 @@ class Player {
 
 	draw() {
 		push()
-		noStroke()
-		fill(this.color)
-		ellipse(this.pos.x,this.pos.y,this.radius*2) // size
+		stroke(this.color)
+		noFill()
+		ellipse(this.pos.x,this.pos.y,this.radius*2)
 		pop()
 
-		drawVector(createVector(width/2,height/2),this.vel)
+		drawVector(createVector(width/2,height/2), this.vel, 'black', 20, 5)
 	}
 }
