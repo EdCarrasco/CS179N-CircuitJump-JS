@@ -13,9 +13,20 @@
 </head>
 <body>
 	<button id="button_create_rail" onclick="mouseMode='CREATE_RAIL';">Create Rail</button>
-	<button id="button_create_and_gate" onclick="mouseMode='CREATE_GATE'; gateType='AND';">Create AND Gate</button>
-	<button id="button_create_or_gate" onclick="mouseMode='CREATE_GATE'; gateType='OR';">Create OR Gate</button>
-
+	<br/>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='AND';">Create AND Gate</button>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='OR';">Create OR Gate</button>
+	
+	<button onclick="mouseMode='CREATE_GATE'; gateType='XOR';">Create XOR Gate</button>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='ODD';">Create ODD Gate</button>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='EVEN';">Create EVEN Gate</button>
+	<br/>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='NOT';">Create NOT Gate</button>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='NAND';">Create NAND Gate</button>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='NOR';">Create NOR Gate</button>
+	<button onclick="mouseMode='CREATE_GATE'; gateType='NXOR';">Create NXOR Gate</button>
+	
+	<br/>
 	<button id="button_move" onclick="mouseMode='MOVE';">Move</button>
 </body>
 </html>

@@ -192,6 +192,12 @@ function drawMouseTool() {
 			pop()
 			break
 		case 'CREATE_RAIL':
+			push()
+			translate(mouseX,mouseY)
+			fill(0,0)
+			stroke(0,50)
+			ellipse(0,0, 10)
+			break
 		case 'MOVE':
 			push()
 			translate(mouseX,mouseY)
@@ -202,6 +208,11 @@ function drawMouseTool() {
 			} else {
 				ellipse(0,0, 10)
 			}
+			pop()
+			push()
+			translate(mouseX,mouseY)
+			fill(0,100)
+			text("move",5,-5)
 			pop()
 			break
 		default:
@@ -253,7 +264,7 @@ function mousePressed() {
 			if (capturedGates.length > 0) {
 				break
 			}
-			
+
 			capturedRailStart = []
 			capturedRailEnd = []
 			for (let rail of railManager.rails) {
