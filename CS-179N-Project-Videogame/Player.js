@@ -15,34 +15,51 @@ class Player {
 		
 		this.velProjection = null // horizontal
 		this.velRejection = null // vertical
+
+		this.hasCollidedWithGate = false
 	}
 
 	addForce(force) {
 		this.acc.add(force)
+	}
 
-
+	getCollisionWithGate() {
+		let collision = false
+		for (let gate of gateManager.gates) {
+			if (gate.hasCollidedWithPlayer) {
+				collision = true
+			}
+		}
+		return collision
 	}
 
 	update() {
 		this.rail = railManager.closestRail
-		if (!this.collision){
-			this.vel.add(this.acc)
-			this.pos.add(this.vel)
-			this.acc.mult(0) // reset
-		
+		//gateManager.checkcollision(this)
+		this.hasCollidedWithGate = this.getCollisionWithGate()
+		if (this == player) text(this.hasCollidedWithGate, _CENTER.x, _CENTER.y)
 
-			this.velProjection = projection(this.vel, this.rail.direction)
-			this.velRejection = rejection(this.vel, this.rail.direction)
+		if (!this.hasCollidedWithGate) {
+			this.vel.add(this.acc)
+			this.vel = constraintVector(this.vel, MIN_SPEED, MAX_SPEED)
+			this.pos.add(this.vel)
+			
+			this.velProjection = (this.rail) ? projection(this.vel, this.rail.direction) : null
+			this.velRejection = (this.rail) ? rejection(this.vel, this.rail.direction) : null
 
 			this.tetherToRail()
 			this.adjustCoords()
-			//this.pos = createVector(mouseX,mouseY)
 
+			//this.pos = createVector(mouseX,mouseY)
 		}
-		gateManager.checkcollision(this)
+		this.acc.mult(0) // reset acceleration
 	}
 
+	
+
 	controls() {
+		if (this != player)
+			return
 		if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) {
 			this.moveHorizontally()
 		}
@@ -69,7 +86,7 @@ class Player {
 		railManager.rails.sort((a,b) => (a.closestDistance > b.closestDistance ? 1 : -1))
 		let point = railManager.rails[0].closestPoint*/
 		railManager.calcClosestRail()
-		let point = railManager.closestRail.closestPoint
+		let point = (railManager.closestRail) ? railManager.closestRail.closestPoint : player.pos
 		let diff = p5.Vector.sub(point, player.pos)
 		this.pos.add(diff)
 	}
@@ -80,15 +97,17 @@ class Player {
 
 		// Always adjust coordinate system so that:
 		// The player's velocity is along the direction of the rail
-		let newVelProj = projection(this.vel, this.rail.direction)
-		let newVelRej = rejection(this.vel, this.rail.direction)
+		if (this.rail) {
+			let newVelProj = projection(this.vel, this.rail.direction)
+			let newVelRej = rejection(this.vel, this.rail.direction)
 
-		newVelProj.normalize().mult(this.velProjection.mag())
-		newVelRej.normalize().mult(this.velRejection.mag())
+			newVelProj.normalize().mult(this.velProjection.mag())
+			newVelRej.normalize().mult(this.velRejection.mag())
 
-		this.vel.mult(0)
-		this.vel.add(newVelProj)
-		this.vel.add(newVelRej)
+			this.vel.mult(0)
+			this.vel.add(newVelProj)
+			this.vel.add(newVelRej)
+		}
 	}
 
 	moveHorizontally(sign=1) {
@@ -134,6 +153,6 @@ class Player {
 		ellipse(this.pos.x,this.pos.y,this.radius*2)
 		pop()
 
-		drawVector(createVector(width/2,height/2), this.vel, 'black', 20, 5)
+		//drawVector(createVector(width/2,height/2), this.vel, 'black', 20, 5)
 	}
 }

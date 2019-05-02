@@ -3,11 +3,11 @@
 class Gate {
 	constructor(pos, type) {
 		this.pos = pos
-		this.active = null
+//		this.active = null
 		this.width = 50
 		this.height = 50
-		this.maxX = this.pos.x + this.width
-		this.maxY = this.pos.y + this.height
+//		this.maxX = this.pos.x + this.width
+//		this.maxY = this.pos.y + this.height
 		this.type = type // AND, OR, NOT, XOR, NAND, ...
 
 		this.inputRails = []
@@ -15,13 +15,21 @@ class Gate {
 		this.inputColor = 'gray'
 		this.outputColor = 'gray'
 
+		this.hasCollidedWithPlayer = false
+
 		this.isPowered = false
-		this.count = 0
+		this.count = 0 // amount of inputRails that are powered
 	}
 
-	hasCollisionWithPos(pos) {
+	hasCollisionWithPoint(pos) {
 		let insideX = pos.x >= this.pos.x && pos.x <= this.pos.x + this.width
 		let insideY = pos.y >= this.pos.y && pos.y <= this.pos.y + this.height
+		return insideX && insideY
+	}
+
+	hasCollisionWithCircle(pos, r) {
+		let insideX = pos.x+r >= this.pos.x && pos.x-r <= this.pos.x + this.width
+		let insideY = pos.y+r >= this.pos.y && pos.y-r <= this.pos.y + this.height
 		return insideX && insideY
 	}
 
@@ -29,71 +37,91 @@ class Gate {
 		this.pos = pos
 	}
 
+	getPlayerCollision() {
+		let touching = this.hasCollisionWithCircle(player.pos, player.radius)
+		return touching && !this.isPowered
+	}
+
 	update() {
-		// Determine which rail's endpoints are touching the gate
-		this.inputRails = []
-		for (let rail of railManager.rails) {
-			if (this.hasCollisionWithPos(rail.endPos)) {
-				this.inputRails.push(rail)
-			}
-		}
+		this.inputRails = this.getInputRails()
+		this.outputRails = this.getOutputRails()
+		this.count = this.getCount()
+		this.isPowered = this.logicGate(this.count, this.inputRails.length)
 
-		// Determine which rails' startpoints are touching the ate
-		this.outputRails = []
-		for (let rail of railManager.rails) {
-			if (this.hasCollisionWithPos(rail.startPos)) {
-				this.outputRails.push(rail)
-			}
-		}
-
-		this.checkPower()
+		this.hasCollidedWithPlayer = this.getPlayerCollision()
+		//text(this.collision, _CENTER.x, _CENTER.y)
 
 		// Update gate colors
 		this.inputColor = (this.inputRails.length > 0) ? this.inputRails[0].color : color(0,0,0,25)
 		this.outputColor = (this.outputRails.length > 0) ? this.outputRails[0].color : color(0,0,0,25)
 	}
 
-	checkPower() {
-		this.count = 0
-		for (let i = 0; i < this.inputRails.length; i++) {
-			if (this.inputRails[i].isPowered) {
-				this.count += 1
+	getInputRails() {
+		// Determine which rail's endpoints are touching the gate
+		let inputRails = []
+		for (let rail of railManager.rails) {
+			if (this.hasCollisionWithPoint(rail.endPos)) {
+				inputRails.push(rail)
 			}
 		}
+		return inputRails
+	}
 
-		let count = this.count
-		let total = this.inputRails.length
+	getOutputRails() {
+		// Determine which rails' startpoints are touching the ate
+		let outputRails = []
+		for (let rail of railManager.rails) {
+			if (this.hasCollisionWithPoint(rail.startPos)) {
+				outputRails.push(rail)
+			}
+		}
+		return outputRails
+	}
+
+	getCount() {
+		let count = 0
+		for (let rail of this.inputRails) {
+			if (rail.isPowered) {
+				count++
+			}
+		}
+		return count
+	}
+
+	logicGate(count, total) {
+		let isPowered = false
 		switch(this.type) {
 			case 'AND':
-				this.isPowered = (count == total && total > 0)
+				isPowered = (count == total && total > 0)
 				break
 			case 'OR':
-				this.isPowered = (count >= 1)
+				isPowered = (count >= 1)
 				break
 			case 'NOT':
-				this.isPowered = (count == 0)
+				isPowered = (count == 0)
 				break
 			case 'XOR':
-				this.isPowered = (count == 1)
+				isPowered = (count == 1)
 				break
 			case 'NAND':
-				this.isPowered = (count != total)
+				isPowered = (count != total)
 				break
 			case 'NOR':
-				this.isPowered = (count == 0)
+				isPowered = (count == 0)
 				break
 			case 'XNOR':
-				this.isPowered = (count == 0 || count == total)
+				isPowered = (count == 0 || count == total)
 				break
 			case 'ODD':
-				this.isPowered = (count % 2 != 0)
+				isPowered = (count % 2 != 0)
 				break
 			case 'EVEN':
-				this.isPowered = (count % 2 == 0)
+				isPowered = (count % 2 == 0)
 				break
 			default:
-				this.isPowered = false
+				isPowered = false
 		}
+		return isPowered
 	}
 
 	draw() {
@@ -101,22 +129,22 @@ class Gate {
 		let halfHeight = this.height/2
 		push()
 		noStroke()
-		fill(this.inputColor)
+		fill(red(this.inputColor),green(this.inputColor),blue(this.inputColor),50)
 		rect(this.pos.x, this.pos.y, halfWidth, this.height)
-		fill(this.outputColor)
+		fill(red(this.outputColor),green(this.outputColor),blue(this.outputColor),50)
 		rect(this.pos.x+halfWidth, this.pos.y, halfWidth, this.height)
 		fill('black')
 		textStyle(BOLD)
 		textAlign(CENTER,CENTER)
-		let str = this.type + "\n" + this.count + " // " + this.inputRails.length
-		str += (this.isPowered) ? ("\n"+"OPEN") : ""
+		let str = this.type + " GATE" + "\n\n" + this.count + " // " + this.inputRails.length
+		str += (this.isPowered) ? ("\n\n"+"open") : ("\n\n"+"closed")
 		text(str, this.pos.x + this.width/2,this.pos.y + this.height/2)
 		pop()
 
 		push()
 		noFill()
 		if (this.isPowered) noStroke()
-		else strokeWeight(3)
+		else strokeWeight(1)
 		rect(this.pos.x, this.pos.y, this.width, this.height)
 		pop()
 	}

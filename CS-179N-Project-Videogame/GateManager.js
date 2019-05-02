@@ -2,9 +2,11 @@ class GateManager {
 	constructor(){
 		this.gates = []
 	}
+
 	add(gate) {
 		this.gates.push(gate)
 	}
+	
 	checkcollision(player){
 		for (let i = 0 ; i < this.gates.length; i++){
 			if ((player.pos.x + 12.5 >=this.gates[i].pos.x )&&(player.pos.x - 12.5 <= this.gates[i].maxX)){
@@ -15,4 +17,15 @@ class GateManager {
 		}
 	}
 
+	update() {
+		for (let gate of this.gates) {
+			gate.update()
+		}
+	}
+
+	draw() {
+		for (let gate of this.gates) {
+			gate.draw()
+		}
+	}
 }

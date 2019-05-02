@@ -59,7 +59,7 @@ class Rail {
 		this.playerToClosest = p5.Vector.sub(this.closestPoint, player.pos)
 		this.closestDistance = this.playerToClosest.mag()
 
-		this.isPowered = false
+		//this.isPowered = false
 	}
 
 	update() {
@@ -122,6 +122,20 @@ class Rail {
 			return 0
 	}
 
+	hasStartPosCollisionWithPoint(pos) {
+		let r = 20
+		let insideStartX = pos.x >= this.startPos.x-r && pos.x <= this.startPos.x+r
+		let insideStartY = pos.y >= this.startPos.y-r && pos.y <= this.startPos.y+r
+		return insideStartX && insideStartY
+	}
+
+	hasEndPosCollisionWithPoint(pos) {
+		let r = 20
+		let insideEndX = pos.x >= this.endPos.x-r && pos.x <= this.endPos.x+r
+		let insideEndY = pos.y >= this.endPos.y-r && pos.y <= this.endPos.y+r
+		return insideEndX && insideEndY
+	}
+
 	draw() {
 		//this.drawHorizontalArea()
 		this.drawRail()
@@ -129,9 +143,11 @@ class Rail {
 
 		push()
 		translate(this.centerPos)
-		let str = (this.isPowered) ? "POWER" : "no_power"
+		let angle = (this.angle > HALF_PI || this.angle < -HALF_PI) ? this.angle+PI : this.angle
+		rotate(angle)
+		let string = (this.isPowered) ? "POWERED" : "unpowered"
 		textAlign(CENTER,CENTER)
-		text(str, 25,15)
+		text(string, 0,-5)
 		pop()
 	}
 
