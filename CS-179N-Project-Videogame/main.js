@@ -27,6 +27,14 @@ let capturedRailEnd = []
 let mousePrev = null
 let newRailColor = 'red'
 
+
+let img = null;
+function preload() {
+  img = loadImage('Character/sparky.png');
+  console.log("img")
+  console.log(img)
+}
+
 function setup() {
 	let canvas = createCanvas(720,640)
 	_CENTER = createVector(width/2,height/2)
@@ -35,6 +43,7 @@ function setup() {
 	railManager = new RailManager()
 	gateManager = new GateManager()
 	player = new Player(createVector(250+0,200-50))
+	player.sprite = img
 
 	player2 = new Player(createVector(200,420))
 

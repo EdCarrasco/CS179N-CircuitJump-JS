@@ -17,6 +17,7 @@ class Player {
 		this.velRejection = null // vertical
 
 		this.hasCollidedWithGate = false
+		this.sprite = null
 	}
 
 	addForce(force) {
@@ -151,6 +152,19 @@ class Player {
 		stroke(this.color)
 		noFill()
 		ellipse(this.pos.x,this.pos.y,this.radius*2)
+		pop()
+
+
+		push()
+		if (this.sprite) {
+			translate(this.pos)
+			scale(0.2)
+			imageMode(CENTER)
+			
+			image(this.sprite, 0,0)
+
+		}
+		
 		pop()
 
 		//drawVector(createVector(width/2,height/2), this.vel, 'black', 20, 5)
