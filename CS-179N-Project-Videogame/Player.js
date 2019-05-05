@@ -11,13 +11,17 @@ class Player {
 		this.onRail = false
 		this.color = 'black'
 
-		this.rail = null
+		this.currentRail = null
 		
 		this.velProjection = null // horizontal
 		this.velRejection = null // vertical
 
 		this.hasCollidedWithGate = false
 		this.sprite = null
+
+		this.velDir = 1
+		this.accDir = 1
+		this.angle = 0
 	}
 
 	addForce(force) {
@@ -35,28 +39,39 @@ class Player {
 	}
 
 	update() {
-		this.rail = railManager.closestRail
-		//gateManager.checkcollision(this)
+		this.currentRail = railManager.closestRail
 		this.hasCollidedWithGate = this.getCollisionWithGate()
-		if (this == player) text(this.hasCollidedWithGate, _CENTER.x, _CENTER.y)
 
 		if (!this.hasCollidedWithGate) {
 			this.vel.add(this.acc)
 			this.vel = constraintVector(this.vel, MIN_SPEED, MAX_SPEED)
 			this.pos.add(this.vel)
 			
-			this.velProjection = (this.rail) ? projection(this.vel, this.rail.direction) : null
-			this.velRejection = (this.rail) ? rejection(this.vel, this.rail.direction) : null
+			this.velProjection = (this.currentRail) ? projection(this.vel, this.currentRail.direction) : null
+			this.velRejection = (this.currentRail) ? rejection(this.vel, this.currentRail.direction) : null
 
 			this.tetherToRail()
 			this.adjustCoords()
 
 			//this.pos = createVector(mouseX,mouseY)
 		}
+
+		this.angle = (this.currentRail) ? this.currentRail.angle : 0
+		this.calcSpriteDirection()
 		this.acc.mult(0) // reset acceleration
 	}
 
-	
+	calcSpriteDirection() {
+		if (this.currentRail) {
+			let v = this.vel.copy().normalize()
+			let a = this.acc.copy().normalize()
+			let d = this.currentRail.direction.copy().normalize()
+			let vdot = v.dot(d)
+			let adot = a.dot(d)
+			this.velDir = (vdot >= 0) ? 1 : -1
+			this.accDir = (adot >= 0) ? 1 : -1
+		}
+	}
 
 	controls() {
 		if (this != player)
@@ -94,13 +109,13 @@ class Player {
 
 	adjustCoords() {
 		railManager.calcClosestRail()
-		this.rail = railManager.closestRail
+		this.currentRail = railManager.closestRail
 
 		// Always adjust coordinate system so that:
 		// The player's velocity is along the direction of the rail
-		if (this.rail) {
-			let newVelProj = projection(this.vel, this.rail.direction)
-			let newVelRej = rejection(this.vel, this.rail.direction)
+		if (this.currentRail) {
+			let newVelProj = projection(this.vel, this.currentRail.direction)
+			let newVelRej = rejection(this.vel, this.currentRail.direction)
 
 			newVelProj.normalize().mult(this.velProjection.mag())
 			newVelRej.normalize().mult(this.velRejection.mag())
@@ -148,24 +163,18 @@ class Player {
 	}
 
 	draw() {
-		push()
-		stroke(this.color)
-		noFill()
-		ellipse(this.pos.x,this.pos.y,this.radius*2)
-		pop()
-
-
-		push()
-		if (this.sprite) {
-			translate(this.pos)
-			scale(0.2)
-			imageMode(CENTER)
-			
-			image(this.sprite, 0,0)
-
+		if (this.sprite == null) {
+			return
 		}
-		
+
+		push()
+		translate(this.pos)
+		rotate(this.angle)
+		scale(this.velDir * 0.2, 0.2)
+		imageMode(CENTER)
+		image(this.sprite, 0,0)
 		pop()
+		
 
 		//drawVector(createVector(width/2,height/2), this.vel, 'black', 20, 5)
 	}

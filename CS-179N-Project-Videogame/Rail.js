@@ -30,6 +30,8 @@ class Rail {
 
 		this.playerMovedThrough = false // bool
 		this.isPowered = false // bool
+
+		this.radius = 5
 	}
 
 	updateValues() {
@@ -123,14 +125,14 @@ class Rail {
 	}
 
 	hasStartPosCollisionWithPoint(pos) {
-		let r = 20
+		let r = this.radius
 		let insideStartX = pos.x >= this.startPos.x-r && pos.x <= this.startPos.x+r
 		let insideStartY = pos.y >= this.startPos.y-r && pos.y <= this.startPos.y+r
 		return insideStartX && insideStartY
 	}
 
 	hasEndPosCollisionWithPoint(pos) {
-		let r = 20
+		let r = this.radius
 		let insideEndX = pos.x >= this.endPos.x-r && pos.x <= this.endPos.x+r
 		let insideEndY = pos.y >= this.endPos.y-r && pos.y <= this.endPos.y+r
 		return insideEndX && insideEndY

@@ -28,11 +28,9 @@ let mousePrev = null
 let newRailColor = 'red'
 
 
-let img = null;
+let playerSprite = null;
 function preload() {
-  img = loadImage('Character/sparky.png');
-  console.log("img")
-  console.log(img)
+  playerSprite = loadImage('Character/sparky.png');
 }
 
 function setup() {
@@ -43,7 +41,7 @@ function setup() {
 	railManager = new RailManager()
 	gateManager = new GateManager()
 	player = new Player(createVector(250+0,200-50))
-	player.sprite = img
+	player.sprite = playerSprite
 
 	player2 = new Player(createVector(200,420))
 
@@ -158,15 +156,6 @@ function constraintVector(vector, min, max) {
 	if (newMag > max) newMag = max
 	else if (newMag < min) newMag = min
 	return vector.copy().normalize().mult(newMag)
-
-
-
-	/*if (vmag > max_speed)
-		return vector.copy().normalize().mult(max_speed)
-	else if (vmag < min_speed)
-		return vector.copy().normalize().mult(min_speed)*/
-	
-	//vector.set(Math.max(Math.min(vector.mag(), max_speed), min_speed))
 }
 
 function objectDragged() {
@@ -266,7 +255,7 @@ function mousePressed() {
 			mousePressedPos = createVector(mouseX, mouseY)
 			capturedGates = []
 			for (let gate of gateManager.gates) {
-				if (gate.hasCollisionWithCircle(mousePressedPos, 25)) {
+				if (gate.hasCollisionWithCircle(mousePressedPos, 20)) {
 					capturedGates.push(gate)
 				}
 			}
