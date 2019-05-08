@@ -10,3 +10,7 @@ A 2D side-scrolling videogame where you control a bolt of lightning and race thr
 ```
 javac -d -cp ".:./pathjar" java.class 
 ```
+
+```
+java -cp "djdjdjufufjfjsljdljffjfjj"
+```
