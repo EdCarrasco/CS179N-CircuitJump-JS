@@ -6,3 +6,7 @@ A 2D side-scrolling videogame where you control a bolt of lightning and race thr
 
 ##Known Bugs
 - The Rail.closestPoint is not accurate when the player is far away from the rail.
+
+```
+javac -d -cp ".:./pathjar" java.class 
+```
